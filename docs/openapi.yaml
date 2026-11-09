@@ -1,0 +1,300 @@
+openapi: 3.1.0
+
+info:
+  title: Biblioteca API
+  description: API REST para gerenciamento de livros e empréstimos.
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8000
+    description: Ambiente local
+
+tags:
+  - name: Geral
+    description: Verificação da API
+  - name: Livros
+    description: Operações relacionadas aos livros
+  - name: Empréstimos
+    description: Operações relacionadas aos empréstimos
+  - name: Métricas
+    description: Indicadores de desempenho
+
+paths:
+
+  /:
+    get:
+      tags:
+        - Geral
+      summary: Verificar funcionamento da API
+      responses:
+        "200":
+          description: API funcionando
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  mensagem:
+                    type: string
+                    example: Biblioteca API funcionando!
+
+  /livros:
+    get:
+      tags:
+        - Livros
+      summary: Listar livros
+      responses:
+        "200":
+          description: Lista de livros cadastrados
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LivroResponse"
+
+    post:
+      tags:
+        - Livros
+      summary: Cadastrar livro
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LivroCreate"
+            example:
+              titulo: Python para Iniciantes
+              autor: Eduardo Gabriel
+              quantidade_disponivel: 3
+      responses:
+        "201":
+          description: Livro cadastrado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LivroResponse"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+
+  /livros/{livro_id}:
+    get:
+      tags:
+        - Livros
+      summary: Consultar livro por ID
+      parameters:
+        - name: livro_id
+          in: path
+          required: true
+          schema:
+            type: integer
+          example: 1
+      responses:
+        "200":
+          description: Livro encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LivroResponse"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+
+  /emprestimos:
+    post:
+      tags:
+        - Empréstimos
+      summary: Realizar empréstimo de livro
+      description: Não permite empréstimos quando não há exemplares disponíveis.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EmprestimoCreate"
+            example:
+              livro_id: 1
+              leitor: Maria Silva
+      responses:
+        "201":
+          description: Empréstimo realizado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EmprestimoResponse"
+        "400":
+          description: Livro sem exemplares disponíveis
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                detail: Livro indisponível para empréstimo.
+        "404":
+          description: Livro não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                detail: Livro não encontrado.
+        "422":
+          $ref: "#/components/responses/ValidationError"
+
+  /emprestimos/{emprestimo_id}:
+    get:
+      tags:
+        - Empréstimos
+      summary: Consultar empréstimo por ID
+      parameters:
+        - name: emprestimo_id
+          in: path
+          required: true
+          schema:
+            type: integer
+          example: 1
+      responses:
+        "200":
+          description: Empréstimo encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EmprestimoResponse"
+        "404":
+          description: Empréstimo não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                detail: Empréstimo não encontrado.
+        "422":
+          $ref: "#/components/responses/ValidationError"
+
+  /metrics:
+    get:
+      tags:
+        - Métricas
+      summary: Consultar métricas de desempenho
+      responses:
+        "200":
+          description: Indicadores de requisições processadas
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MetricasResponse"
+              example:
+                total_requisicoes: 10
+                requisicoes_ate_500ms: 10
+                percentual_ate_500ms: 100.0
+
+components:
+
+  schemas:
+
+    LivroCreate:
+      type: object
+      required:
+        - titulo
+        - autor
+      properties:
+        titulo:
+          type: string
+          example: Python para Iniciantes
+        autor:
+          type: string
+          example: Eduardo Gabriel
+        quantidade_disponivel:
+          type: integer
+          minimum: 1
+          default: 1
+          example: 3
+
+    LivroResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        titulo:
+          type: string
+          example: Python para Iniciantes
+        autor:
+          type: string
+          example: Eduardo Gabriel
+        quantidade_disponivel:
+          type: integer
+          example: 3
+
+    EmprestimoCreate:
+      type: object
+      required:
+        - livro_id
+        - leitor
+      properties:
+        livro_id:
+          type: integer
+          example: 1
+        leitor:
+          type: string
+          minLength: 2
+          example: Maria Silva
+
+    EmprestimoResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        livro_id:
+          type: integer
+          example: 1
+        leitor:
+          type: string
+          example: Maria Silva
+        data_emprestimo:
+          type: string
+          format: date-time
+          example: "2026-11-09T14:30:00"
+
+    MetricasResponse:
+      type: object
+      properties:
+        total_requisicoes:
+          type: integer
+          example: 10
+        requisicoes_ate_500ms:
+          type: integer
+          example: 10
+        percentual_ate_500ms:
+          type: number
+          example: 100.0
+
+    Error:
+      type: object
+      properties:
+        detail:
+          type: string
+          example: Livro não encontrado.
+
+  responses:
+
+    NotFound:
+      description: Recurso não encontrado
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+
+    ValidationError:
+      description: Erro de validação dos dados enviados
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              detail:
+                type: array
+                items:
+                  type: object

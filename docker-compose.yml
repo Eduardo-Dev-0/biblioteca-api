@@ -1,0 +1,15 @@
+
+services:
+  api:
+    build: .
+    container_name: biblioteca-api
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: sqlite:////app/data/biblioteca.db
+    volumes:
+      - biblioteca_data:/app/data
+    restart: unless-stopped
+
+volumes:
+  biblioteca_data:
